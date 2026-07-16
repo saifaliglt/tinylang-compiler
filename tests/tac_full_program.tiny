@@ -1,0 +1,17 @@
+int x = 1;
+float y = 2.5;
+int limit = 4;
+
+x = x + 2 * limit;
+y = y + x / 2;
+
+if (x > limit) {
+    print(x);
+} else {
+    print(y);
+}
+
+while (x < 10) {
+    x = x + 1;
+    print(x);
+}
