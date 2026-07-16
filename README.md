@@ -1,42 +1,91 @@
-# TinyLang Assignment 2: Front-End Implementation
+# TinyLang — A Mini Compiler
 
-TinyLang is a small imperative teaching language for a mini-compiler term project. This phase implements the compiler front end: lexical analysis, syntax analysis, and Abstract Syntax Tree (AST) construction using Python 3 and PLY.
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/)
+[![PLY](https://img.shields.io/badge/PLY-3.11-green)](https://www.dabeaz.com/ply/)
+[![License](https://img.shields.io/badge/License-MIT-lightgrey)](LICENSE)
+
+**TinyLang** is a small imperative teaching language built to explore the full compiler pipeline — from raw source text to Three-Address Code (TAC) — as a term project for a Compiler Construction course. It's implemented from scratch in Python 3 using [PLY](https://www.dabeaz.com/ply/) (Python Lex-Yacc), covering lexical analysis, syntax analysis, AST construction, semantic analysis, and intermediate code generation.
+
+> Term project for BSCS Compiler Construction, Karakoram International University (6th Semester).
+
+---
+
+## Table of Contents
+
+- [Features](#features)
+- [Compiler Pipeline](#compiler-pipeline)
+- [Project Structure](#project-structure)
+- [Prerequisites & Installation](#prerequisites--installation)
+- [Usage](#usage)
+- [TinyLang Syntax](#tinylang-syntax)
+- [Example: Source to TAC](#example-source-to-tac)
+- [Test Cases](#test-cases)
+- [Design Highlights](#design-highlights)
+- [Limitations & Future Work](#limitations--future-work)
+- [References](#references)
+
+---
 
 ## Features
 
-- Integer and floating-point declarations: `int x;`, `float y = 3.5;`
-- Arithmetic expressions with BODMAS/PEMDAS precedence: `+`, `-`, `*`, `/`
+- Integer and floating-point variable declarations: `int x;`, `float y = 3.5;`
+- Arithmetic expressions with correct BODMAS/PEMDAS precedence: `+`, `-`, `*`, `/`
 - Comparison expressions: `==`, `!=`, `<`, `>`
 - Assignment statements
-- `if` / `else` conditional statements
+- `if` / `else` conditional statements (dangling-else resolved)
 - `while` loops
-- `print(...)` commands
-- AST visualization through `display()`
+- `print(...)` statements
+- Single-line comments (`//`)
+- AST visualization via `display()`
+- Symbol-table-backed semantic analysis (undeclared-variable detection, type checking)
+- Three-Address Code (TAC) generation for all supported constructs
+- Clear, located error messages at every compilation stage
+
+## Compiler Pipeline
+
+```
+ Source (.tiny)
+      │
+      ▼
+ ┌───────────┐     ┌────────┐     ┌─────────────────┐     ┌────────────────────┐
+ │  Lexer    │ ──▶ │ Parser │ ──▶ │ Semantic Analyzer │ ──▶ │  TAC Generator     │
+ │ (lexer.py)│     │(parser.│     │(semantic_analyzer│     │ (tac_generator.py) │
+ │           │     │  .py)  │     │      .py)         │     │                    │
+ └───────────┘     └────────┘     └─────────────────┘     └────────────────────┘
+      │                 │                  │                        │
+   Tokens              AST          Validated AST /            Three-Address
+                                     Semantic Errors                 Code
+```
 
 ## Project Structure
 
 ```text
 .
-├── ast_nodes.py
-├── lexer.py
-├── parser.py
-├── main.py
+├── ast_nodes.py            # AST node class definitions + display()
+├── lexer.py                # PLY lexer: tokens, keywords, operators
+├── parser.py                # PLY yacc parser: grammar rules, AST construction
+├── semantic_analyzer.py     # Symbol table, type checking, semantic errors
+├── tac_generator.py         # Three-Address Code generation
+├── main.py                  # CLI entry point (full pipeline)
 ├── requirements.txt
-├── tests/
-│   ├── arithmetic.tiny
-│   ├── control_flow.tiny
-│   └── loops.tiny
-└── progress_report.md
+├── README.md
+├── progress_report.md
+└── tests/
+    ├── arithmetic.tiny
+    ├── control_flow.tiny
+    ├── loops.tiny
+    ├── semantic_error_undeclared.tiny
+    ├── semantic_error_type_mismatch.tiny
+    └── tac_full_program.tiny
 ```
 
-## Prerequisites
+## Prerequisites & Installation
 
 - Python 3.8 or newer
-- PLY
-
-Install dependencies:
 
 ```bash
+git clone https://github.com/<your-username>/tinylang-compiler.git
+cd tinylang-compiler
 pip install -r requirements.txt
 ```
 
@@ -46,9 +95,9 @@ Or install PLY directly:
 pip install ply
 ```
 
-## Running the Compiler Front End
+## Usage
 
-Run `main.py` with a TinyLang source file:
+Run the full pipeline (lex → parse → AST → semantic check → TAC) on any `.tiny` file:
 
 ```bash
 python main.py tests/arithmetic.tiny
@@ -56,9 +105,16 @@ python main.py tests/control_flow.tiny
 python main.py tests/loops.tiny
 ```
 
-The program prints the generated AST. This assignment does not yet perform semantic analysis or code generation.
+On success, the program prints the AST and the generated TAC, and writes the TAC to a matching `.tac` file next to the source.
 
-## TinyLang Syntax Example
+To see semantic error handling in action:
+
+```bash
+python main.py tests/semantic_error_undeclared.tiny
+python main.py tests/semantic_error_type_mismatch.tiny
+```
+
+## TinyLang Syntax
 
 ```c
 int counter = 0;
@@ -70,110 +126,68 @@ while (counter < limit) {
 }
 ```
 
-## Test Case 1: Arithmetic
+## Example: Source to TAC
 
-Source: `tests/arithmetic.tiny`
+**Input**
 
-Expected AST:
-
-```text
-Program
-  VarDecl(type=int, name=a)
-    Initializer
-      Number(value=10)
-  VarDecl(type=float, name=b)
-    Initializer
-      Number(value=2.5)
-  Assign(name=a)
-    BinOp(operator=+)
-      Left
-        Identifier(name=a)
-      Right
-        BinOp(operator=*)
-          Left
-            Number(value=5)
-          Right
-            Number(value=3)
-  Assign(name=b)
-    BinOp(operator=/)
-      Left
-        BinOp(operator=+)
-          Left
-            Identifier(name=b)
-          Right
-            Number(value=1.5)
-      Right
-        Number(value=2)
-  Print
-    Identifier(name=a)
-  Print
-    Identifier(name=b)
+```c
+int a = 10;
+int b = 5;
+if (a > b) {
+    print(a);
+} else {
+    print(b);
+}
 ```
 
-## Test Case 2: Control Flow
-
-Source: `tests/control_flow.tiny`
-
-Expected AST:
+**Generated TAC**
 
 ```text
-Program
-  VarDecl(type=int, name=score)
-    Initializer
-      Number(value=75)
-  If
-    Condition
-      BinOp(operator=>)
-        Left
-          Identifier(name=score)
-        Right
-          Number(value=50)
-    Then
-      Print
-        Identifier(name=score)
-    Else
-      Assign(name=score)
-        BinOp(operator=+)
-          Left
-            Identifier(name=score)
-          Right
-            Number(value=10)
-      Print
-        Identifier(name=score)
+a = 10
+b = 5
+t1 = a > b
+if t1 goto L1
+goto L2
+L1:
+print a
+goto L3
+L2:
+print b
+L3:
 ```
 
-## Test Case 3: Loops
+## Test Cases
 
-Source: `tests/loops.tiny`
+| Test | Purpose |
+|---|---|
+| `arithmetic.tiny` | Declarations, operator precedence, parenthesized expressions |
+| `control_flow.tiny` | `if`/`else`, comparisons, branch-scoped assignment |
+| `loops.tiny` | `while` loops, loop-condition evaluation, in-loop updates |
+| `semantic_error_undeclared.tiny` | Use of an undeclared identifier |
+| `semantic_error_type_mismatch.tiny` | Assigning an incompatible type |
+| `tac_full_program.tiny` | End-to-end program exercising every TAC instruction pattern |
 
-Expected AST:
+## Design Highlights
 
-```text
-Program
-  VarDecl(type=int, name=counter)
-    Initializer
-      Number(value=0)
-  VarDecl(type=int, name=limit)
-    Initializer
-      Number(value=3)
-  While
-    Condition
-      BinOp(operator=<)
-        Left
-          Identifier(name=counter)
-        Right
-          Identifier(name=limit)
-    Body
-      Print
-        Identifier(name=counter)
-      Assign(name=counter)
-        BinOp(operator=+)
-          Left
-            Identifier(name=counter)
-          Right
-            Number(value=1)
-```
+- **Operator precedence** is handled declaratively via PLY's `precedence` tuple rather than grammar restructuring.
+- **Dangling-else ambiguity** is resolved using an artificial `IFX` precedence marker, favoring the nearest unmatched `if`.
+- **Semantic analysis** uses the visitor pattern to walk the AST, backed by a symbol table that tracks each variable's declared type and declaration line.
+- **TAC generation** reuses the same AST and visitor structure, emitting sequential temporaries (`t1, t2, ...`) and labels (`L1, L2, ...`) for control flow.
 
-## Notes for Future Phases
+## Limitations & Future Work
 
-The AST is deliberately simple and phase-friendly. Semantic analysis can traverse it to build a symbol table and enforce type rules. Code generation can later traverse the same tree to emit Three-Address Code.
+- No functions, arrays, or user-defined types
+- No code optimization passes on the generated TAC
+- No target-machine code generation (TAC is the final output)
+- Single global scope only (no nested block scoping)
+
+## References
+
+1. A. V. Aho, M. S. Lam, R. Sethi, and J. D. Ullman, *Compilers: Principles, Techniques, and Tools*, 2nd ed. Pearson Education, 2006.
+2. K. D. Cooper and L. Torczon, *Engineering a Compiler*, 2nd ed. Morgan Kaufmann, 2011.
+3. D. Beazley, *PLY (Python Lex-Yacc) Documentation*, v3.11. https://www.dabeaz.com/ply/
+4. A. Aiken, *Stanford CS143: Compilers — Course Materials*. https://web.stanford.edu/class/cs143/
+
+---
+
+*Term project for the Compiler Construction course, Department of Computer Science, Karakoram International University.*
