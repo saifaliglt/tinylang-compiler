@@ -30,6 +30,7 @@ class Program(ASTNode):
     """Root node containing all top-level statements."""
 
     statements: List[ASTNode]
+    line: int = 1
 
     def display(self, indent: int = 0) -> None:
         print_indented(indent, "Program")
@@ -44,6 +45,7 @@ class VarDecl(ASTNode):
     var_type: str
     name: str
     initializer: Optional[ASTNode] = None
+    line: int = 0
 
     def display(self, indent: int = 0) -> None:
         print_indented(indent, f"VarDecl(type={self.var_type}, name={self.name})")
@@ -58,6 +60,7 @@ class Assign(ASTNode):
 
     name: str
     value: ASTNode
+    line: int = 0
 
     def display(self, indent: int = 0) -> None:
         print_indented(indent, f"Assign(name={self.name})")
@@ -71,6 +74,7 @@ class BinOp(ASTNode):
     operator: str
     left: ASTNode
     right: ASTNode
+    line: int = 0
 
     def display(self, indent: int = 0) -> None:
         print_indented(indent, f"BinOp(operator={self.operator})")
@@ -85,6 +89,7 @@ class Number(ASTNode):
     """Numeric literal node for integer and floating-point values."""
 
     value: Union[int, float]
+    line: int = 0
 
     def display(self, indent: int = 0) -> None:
         print_indented(indent, f"Number(value={self.value})")
@@ -95,6 +100,7 @@ class Identifier(ASTNode):
     """Identifier reference node."""
 
     name: str
+    line: int = 0
 
     def display(self, indent: int = 0) -> None:
         print_indented(indent, f"Identifier(name={self.name})")
@@ -107,6 +113,7 @@ class If(ASTNode):
     condition: ASTNode
     then_branch: List[ASTNode]
     else_branch: Optional[List[ASTNode]] = None
+    line: int = 0
 
     def display(self, indent: int = 0) -> None:
         print_indented(indent, "If")
@@ -127,6 +134,7 @@ class While(ASTNode):
 
     condition: ASTNode
     body: List[ASTNode]
+    line: int = 0
 
     def display(self, indent: int = 0) -> None:
         print_indented(indent, "While")
@@ -142,6 +150,7 @@ class Print(ASTNode):
     """Print statement node."""
 
     expression: ASTNode
+    line: int = 0
 
     def display(self, indent: int = 0) -> None:
         print_indented(indent, "Print")

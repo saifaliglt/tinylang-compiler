@@ -16,7 +16,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from parser import parse
+from lexer import get_lexical_error_count
+from parser import get_syntax_error_count, parse
 from semantic_analyzer import analyze
 from tac_generator import generate
 
@@ -52,6 +53,9 @@ def main() -> None:
 
     source_code = read_source_file(args.source_file)
     ast_root = parse(source_code)
+
+    if get_lexical_error_count() or get_syntax_error_count():
+        raise SystemExit("Compilation halted due to lexical/syntax errors.")
 
     if ast_root is None:
         raise SystemExit("Parsing failed. No AST was generated.")

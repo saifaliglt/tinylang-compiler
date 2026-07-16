@@ -10,6 +10,9 @@ from __future__ import annotations
 import ply.lex as lex
 
 
+lexical_error_count = 0
+
+
 reserved = {
     "int": "INT_TYPE",
     "float": "FLOAT_TYPE",
@@ -90,6 +93,9 @@ def t_newline(token):
 
 def t_error(token):
     """Report illegal characters and continue scanning."""
+    global lexical_error_count
+    lexical_error_count += 1
+    token.lexer.error_count = getattr(token.lexer, "error_count", 0) + 1
     print(
         f"Lexical error: illegal character {token.value[0]!r} "
         f"at line {token.lexer.lineno}"
@@ -99,7 +105,20 @@ def t_error(token):
 
 def build_lexer(**kwargs):
     """Create and return a fresh PLY lexer instance."""
-    return lex.lex(**kwargs)
+    lexer_instance = lex.lex(**kwargs)
+    lexer_instance.error_count = 0
+    return lexer_instance
+
+
+def reset_lexical_error_count() -> None:
+    """Reset the module-level lexical error counter before a parse run."""
+    global lexical_error_count
+    lexical_error_count = 0
+
+
+def get_lexical_error_count() -> int:
+    """Expose lexical errors so main.py can halt before semantic analysis."""
+    return lexical_error_count
 
 
 lexer = build_lexer()
